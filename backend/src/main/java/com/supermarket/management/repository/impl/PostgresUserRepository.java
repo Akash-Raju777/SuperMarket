@@ -28,6 +28,7 @@ public class PostgresUserRepository implements UserRepository {
             UserAccount ua = new UserAccount();
             ua.setUsername(rs.getString("username"));
             ua.setPassword(rs.getString("password"));
+            ua.setBusinessName(rs.getString("business_name"));
             ua.setRole(rs.getString("role"));
             return ua;
         }
@@ -36,7 +37,7 @@ public class PostgresUserRepository implements UserRepository {
     @Override
     public Optional<UserAccount> findByUsername(String username) {
         List<UserAccount> list = jdbcTemplate.query(
-                "SELECT username, password, role FROM user_accounts WHERE username = ?",
+                "SELECT username, password, business_name, role FROM user_accounts WHERE username = ?",
                 rowMapper,
                 username
         );
@@ -48,16 +49,18 @@ public class PostgresUserRepository implements UserRepository {
         Optional<UserAccount> existing = findByUsername(userAccount.getUsername());
         if (existing.isPresent()) {
             jdbcTemplate.update(
-                    "UPDATE user_accounts SET password = ?, role = ? WHERE username = ?",
+                    "UPDATE user_accounts SET password = ?, business_name = ?, role = ? WHERE username = ?",
                     userAccount.getPassword(),
+                    userAccount.getBusinessName(),
                     userAccount.getRole(),
                     userAccount.getUsername()
             );
         } else {
             jdbcTemplate.update(
-                    "INSERT INTO user_accounts (username, password, role) VALUES (?, ?, ?)",
+                    "INSERT INTO user_accounts (username, password, business_name, role) VALUES (?, ?, ?, ?)",
                     userAccount.getUsername(),
                     userAccount.getPassword(),
+                    userAccount.getBusinessName(),
                     userAccount.getRole()
             );
         }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { api, Product, Offer } from '@/lib/api';
+import { useSync } from '@/context/SyncContext';
 import { 
   Plus, 
   Tag, 
@@ -24,6 +25,9 @@ export default function OffersPage() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingOffer, setEditingOffer] = useState<Offer | null>(null);
+
+  const triggerSync = useSync('offers', loadData);
+  useSync('products', loadData);
   
   // Searchable Product Combobox states
   const [productSearchTerm, setProductSearchTerm] = useState('');
@@ -61,7 +65,7 @@ export default function OffersPage() {
     }
     try {
       await api.deleteOffer(offerId);
-      await loadData();
+      triggerSync('offers');
     } catch (err) {
       console.error('Failed to delete offer', err);
       alert('Error deleting campaign.');
@@ -165,7 +169,7 @@ export default function OffersPage() {
       setFormStart('');
       setFormEnd('');
 
-      await loadData();
+      triggerSync('offers');
     } catch (err) {
       console.error('Failed to save offer campaign', err);
       alert('Error saving campaign.');
@@ -175,7 +179,7 @@ export default function OffersPage() {
   const handleToggle = async (offerId: string) => {
     try {
       await api.toggleOffer(offerId);
-      await loadData();
+      triggerSync('offers');
     } catch (err) {
       console.error('Failed to toggle campaign state', err);
       alert('Error changing campaign state.');

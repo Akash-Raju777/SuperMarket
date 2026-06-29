@@ -1,5 +1,6 @@
 package com.supermarket.management.repository.impl;
 
+import com.supermarket.management.config.TenantContext;
 import com.supermarket.management.model.Product;
 import com.supermarket.management.repository.ProductRepository;
 import org.springframework.context.annotation.Profile;
@@ -41,15 +42,18 @@ public class PostgresProductRepository implements ProductRepository {
 
     @Override
     public List<Product> findAll() {
-        return jdbcTemplate.query("SELECT id, name, brand, photoUrl, mfgDate, expDate, arrivingDate, quantity, price FROM products", rowMapper);
+        String tenant = TenantContext.getCurrentTenant();
+        return jdbcTemplate.query("SELECT id, name, brand, photoUrl, mfgDate, expDate, arrivingDate, quantity, price FROM products WHERE business_id = ?", rowMapper, tenant);
     }
 
     @Override
     public Optional<Product> findById(String id) {
+        String tenant = TenantContext.getCurrentTenant();
         List<Product> list = jdbcTemplate.query(
-                "SELECT id, name, brand, photoUrl, mfgDate, expDate, arrivingDate, quantity, price FROM products WHERE id = ?",
+                "SELECT id, name, brand, photoUrl, mfgDate, expDate, arrivingDate, quantity, price FROM products WHERE id = ? AND business_id = ?",
                 rowMapper,
-                id
+                id,
+                tenant
         );
         return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
     }
@@ -60,10 +64,11 @@ public class PostgresProductRepository implements ProductRepository {
             product.setId("P" + System.currentTimeMillis());
         }
         
+        String tenant = TenantContext.getCurrentTenant();
         Optional<Product> existing = findById(product.getId());
         if (existing.isPresent()) {
             jdbcTemplate.update(
-                    "UPDATE products SET name = ?, brand = ?, photoUrl = ?, mfgDate = ?, expDate = ?, arrivingDate = ?, quantity = ?, price = ? WHERE id = ?",
+                    "UPDATE products SET name = ?, brand = ?, photoUrl = ?, mfgDate = ?, expDate = ?, arrivingDate = ?, quantity = ?, price = ? WHERE id = ? AND business_id = ?",
                     product.getName(),
                     product.getBrand(),
                     product.getPhotoUrl(),
@@ -72,11 +77,12 @@ public class PostgresProductRepository implements ProductRepository {
                     product.getArrivingDate(),
                     product.getQuantity(),
                     product.getPrice(),
-                    product.getId()
+                    product.getId(),
+                    tenant
             );
         } else {
             jdbcTemplate.update(
-                    "INSERT INTO products (id, name, brand, photoUrl, mfgDate, expDate, arrivingDate, quantity, price) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO products (id, name, brand, photoUrl, mfgDate, expDate, arrivingDate, quantity, price, business_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     product.getId(),
                     product.getName(),
                     product.getBrand(),
@@ -85,7 +91,8 @@ public class PostgresProductRepository implements ProductRepository {
                     product.getExpDate(),
                     product.getArrivingDate(),
                     product.getQuantity(),
-                    product.getPrice()
+                    product.getPrice(),
+                    tenant
             );
         }
         return product;
@@ -93,6 +100,7 @@ public class PostgresProductRepository implements ProductRepository {
 
     @Override
     public void deleteById(String id) {
-        jdbcTemplate.update("DELETE FROM products WHERE id = ?", id);
+        String tenant = TenantContext.getCurrentTenant();
+        jdbcTemplate.update("DELETE FROM products WHERE id = ? AND business_id = ?", id, tenant);
     }
 }

@@ -1,5 +1,6 @@
 package com.supermarket.management.repository.impl;
 
+import com.supermarket.management.config.TenantContext;
 import com.supermarket.management.model.CustomerProfile;
 import com.supermarket.management.repository.CustomerProfileRepository;
 import org.springframework.context.annotation.Profile;
@@ -35,30 +36,35 @@ public class PostgresCustomerProfileRepository implements CustomerProfileReposit
 
     @Override
     public Optional<CustomerProfile> findByMobile(String mobile) {
+        String tenant = TenantContext.getCurrentTenant();
         List<CustomerProfile> list = jdbcTemplate.query(
-                "SELECT mobile, name, points FROM customer_profiles WHERE mobile = ?",
+                "SELECT mobile, name, points FROM customer_profiles WHERE mobile = ? AND business_id = ?",
                 rowMapper,
-                mobile
+                mobile,
+                tenant
         );
         return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
     }
 
     @Override
     public CustomerProfile save(CustomerProfile profile) {
+        String tenant = TenantContext.getCurrentTenant();
         Optional<CustomerProfile> existing = findByMobile(profile.getMobile());
         if (existing.isPresent()) {
             jdbcTemplate.update(
-                    "UPDATE customer_profiles SET name = ?, points = ? WHERE mobile = ?",
+                    "UPDATE customer_profiles SET name = ?, points = ? WHERE mobile = ? AND business_id = ?",
                     profile.getName(),
                     profile.getPoints(),
-                    profile.getMobile()
+                    profile.getMobile(),
+                    tenant
             );
         } else {
             jdbcTemplate.update(
-                    "INSERT INTO customer_profiles (mobile, name, points) VALUES (?, ?, ?)",
+                    "INSERT INTO customer_profiles (mobile, name, points, business_id) VALUES (?, ?, ?, ?)",
                     profile.getMobile(),
                     profile.getName(),
-                    profile.getPoints()
+                    profile.getPoints(),
+                    tenant
             );
         }
         return profile;
@@ -66,6 +72,7 @@ public class PostgresCustomerProfileRepository implements CustomerProfileReposit
 
     @Override
     public List<CustomerProfile> findAll() {
-        return jdbcTemplate.query("SELECT mobile, name, points FROM customer_profiles", rowMapper);
+        String tenant = TenantContext.getCurrentTenant();
+        return jdbcTemplate.query("SELECT mobile, name, points FROM customer_profiles WHERE business_id = ?", rowMapper, tenant);
     }
 }

@@ -1,5 +1,6 @@
 package com.supermarket.management.repository.impl;
 
+import com.supermarket.management.config.TenantContext;
 import com.supermarket.management.model.Offer;
 import com.supermarket.management.repository.OfferRepository;
 import org.springframework.context.annotation.Profile;
@@ -39,15 +40,18 @@ public class PostgresOfferRepository implements OfferRepository {
 
     @Override
     public List<Offer> findAll() {
-        return jdbcTemplate.query("SELECT offerId, productId, offerType, discount, active, startDate, endDate FROM offers", rowMapper);
+        String tenant = TenantContext.getCurrentTenant();
+        return jdbcTemplate.query("SELECT offerId, productId, offerType, discount, active, startDate, endDate FROM offers WHERE business_id = ?", rowMapper, tenant);
     }
 
     @Override
     public Optional<Offer> findById(String id) {
+        String tenant = TenantContext.getCurrentTenant();
         List<Offer> list = jdbcTemplate.query(
-                "SELECT offerId, productId, offerType, discount, active, startDate, endDate FROM offers WHERE offerId = ?",
+                "SELECT offerId, productId, offerType, discount, active, startDate, endDate FROM offers WHERE offerId = ? AND business_id = ?",
                 rowMapper,
-                id
+                id,
+                tenant
         );
         return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
     }
@@ -58,28 +62,31 @@ public class PostgresOfferRepository implements OfferRepository {
             offer.setOfferId("O" + System.currentTimeMillis());
         }
 
+        String tenant = TenantContext.getCurrentTenant();
         Optional<Offer> existing = findById(offer.getOfferId());
         if (existing.isPresent()) {
             jdbcTemplate.update(
-                    "UPDATE offers SET productId = ?, offerType = ?, discount = ?, active = ?, startDate = ?, endDate = ? WHERE offerId = ?",
+                    "UPDATE offers SET productId = ?, offerType = ?, discount = ?, active = ?, startDate = ?, endDate = ? WHERE offerId = ? AND business_id = ?",
                     offer.getProductId(),
                     offer.getOfferType(),
                     offer.getDiscount(),
                     offer.getActive(),
                     offer.getStartDate(),
                     offer.getEndDate(),
-                    offer.getOfferId()
+                    offer.getOfferId(),
+                    tenant
             );
         } else {
             jdbcTemplate.update(
-                    "INSERT INTO offers (offerId, productId, offerType, discount, active, startDate, endDate) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO offers (offerId, productId, offerType, discount, active, startDate, endDate, business_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                     offer.getOfferId(),
                     offer.getProductId(),
                     offer.getOfferType(),
                     offer.getDiscount(),
                     offer.getActive(),
                     offer.getStartDate(),
-                    offer.getEndDate()
+                    offer.getEndDate(),
+                    tenant
             );
         }
         return offer;
@@ -87,6 +94,7 @@ public class PostgresOfferRepository implements OfferRepository {
 
     @Override
     public void deleteById(String id) {
-        jdbcTemplate.update("DELETE FROM offers WHERE offerId = ?", id);
+        String tenant = TenantContext.getCurrentTenant();
+        jdbcTemplate.update("DELETE FROM offers WHERE offerId = ? AND business_id = ?", id, tenant);
     }
 }

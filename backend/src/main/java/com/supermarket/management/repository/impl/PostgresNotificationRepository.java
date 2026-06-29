@@ -1,5 +1,6 @@
 package com.supermarket.management.repository.impl;
 
+import com.supermarket.management.config.TenantContext;
 import com.supermarket.management.model.Notification;
 import com.supermarket.management.repository.NotificationRepository;
 import org.springframework.context.annotation.Profile;
@@ -38,15 +39,18 @@ public class PostgresNotificationRepository implements NotificationRepository {
 
     @Override
     public List<Notification> findAll() {
-        return jdbcTemplate.query("SELECT notificationId, type, message, productId, timestamp, readStatus FROM notifications", rowMapper);
+        String tenant = TenantContext.getCurrentTenant();
+        return jdbcTemplate.query("SELECT notificationId, type, message, productId, timestamp, readStatus FROM notifications WHERE business_id = ?", rowMapper, tenant);
     }
 
     @Override
     public Optional<Notification> findById(String id) {
+        String tenant = TenantContext.getCurrentTenant();
         List<Notification> list = jdbcTemplate.query(
-                "SELECT notificationId, type, message, productId, timestamp, readStatus FROM notifications WHERE notificationId = ?",
+                "SELECT notificationId, type, message, productId, timestamp, readStatus FROM notifications WHERE notificationId = ? AND business_id = ?",
                 rowMapper,
-                id
+                id,
+                tenant
         );
         return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
     }
@@ -57,26 +61,29 @@ public class PostgresNotificationRepository implements NotificationRepository {
             notification.setNotificationId("N" + System.currentTimeMillis());
         }
 
+        String tenant = TenantContext.getCurrentTenant();
         Optional<Notification> existing = findById(notification.getNotificationId());
         if (existing.isPresent()) {
             jdbcTemplate.update(
-                    "UPDATE notifications SET type = ?, message = ?, productId = ?, timestamp = ?, readStatus = ? WHERE notificationId = ?",
+                    "UPDATE notifications SET type = ?, message = ?, productId = ?, timestamp = ?, readStatus = ? WHERE notificationId = ? AND business_id = ?",
                     notification.getType(),
                     notification.getMessage(),
                     notification.getProductId(),
                     notification.getTimestamp(),
                     notification.getReadStatus(),
-                    notification.getNotificationId()
+                    notification.getNotificationId(),
+                    tenant
             );
         } else {
             jdbcTemplate.update(
-                    "INSERT INTO notifications (notificationId, type, message, productId, timestamp, readStatus) VALUES (?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO notifications (notificationId, type, message, productId, timestamp, readStatus, business_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
                     notification.getNotificationId(),
                     notification.getType(),
                     notification.getMessage(),
                     notification.getProductId(),
                     notification.getTimestamp(),
-                    notification.getReadStatus()
+                    notification.getReadStatus(),
+                    tenant
             );
         }
         return notification;
@@ -84,9 +91,11 @@ public class PostgresNotificationRepository implements NotificationRepository {
 
     @Override
     public long countUnread() {
+        String tenant = TenantContext.getCurrentTenant();
         Long val = jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM notifications WHERE readStatus = false",
-                Long.class
+                "SELECT COUNT(*) FROM notifications WHERE readStatus = false AND business_id = ?",
+                Long.class,
+                tenant
         );
         return val != null ? val : 0L;
     }

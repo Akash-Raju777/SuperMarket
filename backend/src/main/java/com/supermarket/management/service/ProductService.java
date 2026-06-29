@@ -1,5 +1,6 @@
 package com.supermarket.management.service;
 
+import com.supermarket.management.config.TenantContext;
 import com.supermarket.management.model.Product;
 import com.supermarket.management.repository.ProductRepository;
 import org.springframework.stereotype.Service;
@@ -22,8 +23,16 @@ public class ProductService {
     }
 
     public List<Product> getAllProducts() {
-        // Run expiry checks dynamically on fetch to keep notifications in sync
-        notificationService.runExpiryAndSalesChecks();
+        // Run expiry checks asynchronously to prevent blocking the product retrieval
+        final String tenant = TenantContext.getCurrentTenant();
+        java.util.concurrent.CompletableFuture.runAsync(() -> {
+            try {
+                TenantContext.setCurrentTenant(tenant);
+                notificationService.runExpiryAndSalesChecks();
+            } finally {
+                TenantContext.clear();
+            }
+        });
         return productRepository.findAll();
     }
 
@@ -34,7 +43,16 @@ public class ProductService {
     public Product saveProduct(Product product) {
         Product saved = productRepository.save(product);
         notificationService.triggerStockCheck(saved);
-        notificationService.runExpiryAndSalesChecks();
+        
+        final String tenant = TenantContext.getCurrentTenant();
+        java.util.concurrent.CompletableFuture.runAsync(() -> {
+            try {
+                TenantContext.setCurrentTenant(tenant);
+                notificationService.runExpiryAndSalesChecks();
+            } finally {
+                TenantContext.clear();
+            }
+        });
         return saved;
     }
 

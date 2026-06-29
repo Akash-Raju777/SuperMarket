@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { api, Product, DashboardStats } from '@/lib/api';
+import { useSync } from '@/context/SyncContext';
 import { 
   Plus, 
   Edit, 
@@ -60,6 +61,10 @@ export default function ProductTrackerPage() {
     }
   }
 
+  const triggerSync = useSync('products', loadData);
+  useSync('billing', loadData);
+  useSync('notifications', loadData);
+
   useEffect(() => {
     loadData();
   }, []);
@@ -92,7 +97,7 @@ export default function ProductTrackerPage() {
     setFormArrival(p.arrivingDate);
     setFormPhotoUrl(p.photoUrl);
     setImageFile(null);
-    setImagePreviewUrl(p.photoUrl.startsWith('/') ? `http://localhost:8080${p.photoUrl}` : p.photoUrl);
+    setImagePreviewUrl(api.getImageUrl(p.photoUrl));
     setIsModalOpen(true);
   };
 
@@ -151,7 +156,7 @@ export default function ProductTrackerPage() {
       }
 
       setIsModalOpen(false);
-      await loadData();
+      triggerSync('products');
     } catch (err) {
       console.error('Failed to save product', err);
       alert('Error saving product details.');
@@ -168,7 +173,7 @@ export default function ProductTrackerPage() {
     setLoading(true);
     try {
       await api.deleteProduct(id);
-      await loadData();
+      triggerSync('products');
     } catch (err) {
       console.error('Failed to delete product', err);
       alert('Error deleting product.');
@@ -329,7 +334,7 @@ export default function ProductTrackerPage() {
                             <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-slate-700 bg-slate-950 flex items-center justify-center">
                               {p.photoUrl ? (
                                 <img 
-                                  src={p.photoUrl.startsWith('/') ? `http://localhost:8080${p.photoUrl}` : p.photoUrl} 
+                                  src={api.getImageUrl(p.photoUrl)} 
                                   alt={p.name} 
                                   className="h-full w-full object-cover"
                                 />
@@ -403,7 +408,7 @@ export default function ProductTrackerPage() {
                     <div className="h-48 w-full relative overflow-hidden bg-slate-950 flex items-center justify-center border-b border-white/5">
                       {p.photoUrl ? (
                         <img 
-                          src={p.photoUrl.startsWith('/') ? `http://localhost:8080${p.photoUrl}` : p.photoUrl} 
+                          src={api.getImageUrl(p.photoUrl)} 
                           alt={p.name} 
                           className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
                         />

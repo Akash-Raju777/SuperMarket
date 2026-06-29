@@ -123,7 +123,8 @@ public class RdsPostgresConfig {
                             "arrivingDate VARCHAR(50), " +
                             "quantity INTEGER, " +
                             "price DOUBLE PRECISION)");
-                    System.out.println("-> Table 'products' verified/created.");
+                    stmt.execute("ALTER TABLE products ADD COLUMN IF NOT EXISTS business_id VARCHAR(100)");
+                    System.out.println("-> Table 'products' verified/migrated.");
 
                     stmt.execute("CREATE TABLE IF NOT EXISTS offers (" +
                             "offerId VARCHAR(100) PRIMARY KEY, " +
@@ -133,7 +134,8 @@ public class RdsPostgresConfig {
                             "active BOOLEAN, " +
                             "startDate VARCHAR(50), " +
                             "endDate VARCHAR(50))");
-                    System.out.println("-> Table 'offers' verified/created.");
+                    stmt.execute("ALTER TABLE offers ADD COLUMN IF NOT EXISTS business_id VARCHAR(100)");
+                    System.out.println("-> Table 'offers' verified/migrated.");
 
                     stmt.execute("CREATE TABLE IF NOT EXISTS sales (" +
                             "billId VARCHAR(100), " +
@@ -142,7 +144,26 @@ public class RdsPostgresConfig {
                             "saleDate VARCHAR(50), " +
                             "totalAmount DOUBLE PRECISION, " +
                             "PRIMARY KEY (billId, productId))");
-                    System.out.println("-> Table 'sales' verified/created.");
+                    stmt.execute("ALTER TABLE sales ADD COLUMN IF NOT EXISTS productName VARCHAR(255)");
+                    stmt.execute("ALTER TABLE sales ADD COLUMN IF NOT EXISTS price DOUBLE PRECISION");
+                    stmt.execute("ALTER TABLE sales ADD COLUMN IF NOT EXISTS originalLineTotal DOUBLE PRECISION");
+                    stmt.execute("ALTER TABLE sales ADD COLUMN IF NOT EXISTS discountApplied DOUBLE PRECISION");
+                    stmt.execute("ALTER TABLE sales ADD COLUMN IF NOT EXISTS customerMobile VARCHAR(100)");
+                    stmt.execute("ALTER TABLE sales ADD COLUMN IF NOT EXISTS customerName VARCHAR(255)");
+                    stmt.execute("ALTER TABLE sales ADD COLUMN IF NOT EXISTS pointsEarned INTEGER");
+                    stmt.execute("ALTER TABLE sales ADD COLUMN IF NOT EXISTS totalPoints INTEGER");
+                    stmt.execute("ALTER TABLE sales ADD COLUMN IF NOT EXISTS subtotal DOUBLE PRECISION");
+                    stmt.execute("ALTER TABLE sales ADD COLUMN IF NOT EXISTS discount DOUBLE PRECISION");
+                    stmt.execute("ALTER TABLE sales ADD COLUMN IF NOT EXISTS tax DOUBLE PRECISION");
+                    stmt.execute("ALTER TABLE sales ADD COLUMN IF NOT EXISTS finalAmount DOUBLE PRECISION");
+                    stmt.execute("ALTER TABLE sales ADD COLUMN IF NOT EXISTS business_id VARCHAR(100)");
+                    try {
+                        stmt.execute("ALTER TABLE sales DROP CONSTRAINT IF EXISTS sales_pkey");
+                        stmt.execute("ALTER TABLE sales ADD PRIMARY KEY (billId, productId, business_id)");
+                    } catch (Exception pkEx) {
+                        System.out.println("Note on sales primary key update: " + pkEx.getMessage());
+                    }
+                    System.out.println("-> Table 'sales' verified/migrated.");
 
                     stmt.execute("CREATE TABLE IF NOT EXISTS notifications (" +
                             "notificationId VARCHAR(100) PRIMARY KEY, " +
@@ -151,19 +172,28 @@ public class RdsPostgresConfig {
                             "productId VARCHAR(100), " +
                             "timestamp VARCHAR(100), " +
                             "readStatus BOOLEAN)");
-                    System.out.println("-> Table 'notifications' verified/created.");
+                    stmt.execute("ALTER TABLE notifications ADD COLUMN IF NOT EXISTS business_id VARCHAR(100)");
+                    System.out.println("-> Table 'notifications' verified/migrated.");
 
                     stmt.execute("CREATE TABLE IF NOT EXISTS customer_profiles (" +
                             "mobile VARCHAR(100) PRIMARY KEY, " +
                             "name VARCHAR(255), " +
                             "points INTEGER)");
-                    System.out.println("-> Table 'customer_profiles' verified/created.");
+                    stmt.execute("ALTER TABLE customer_profiles ADD COLUMN IF NOT EXISTS business_id VARCHAR(100)");
+                    try {
+                        stmt.execute("ALTER TABLE customer_profiles DROP CONSTRAINT IF EXISTS customer_profiles_pkey");
+                        stmt.execute("ALTER TABLE customer_profiles ADD PRIMARY KEY (mobile, business_id)");
+                    } catch (Exception pkEx) {
+                        System.out.println("Note on customer_profiles primary key update: " + pkEx.getMessage());
+                    }
+                    System.out.println("-> Table 'customer_profiles' verified/migrated.");
 
                     stmt.execute("CREATE TABLE IF NOT EXISTS user_accounts (" +
                             "username VARCHAR(100) PRIMARY KEY, " +
                             "password VARCHAR(255), " +
                             "role VARCHAR(50))");
-                    System.out.println("-> Table 'user_accounts' verified/created.");
+                    stmt.execute("ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS business_name VARCHAR(255)");
+                    System.out.println("-> Table 'user_accounts' verified/migrated.");
                     
                     System.out.println("SUCCESS: RDS 'db push' schema initialization completed successfully!");
                 } catch (Exception e) {

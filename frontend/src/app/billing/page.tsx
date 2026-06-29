@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { api, Product, Offer, CheckoutResponse } from '@/lib/api';
+import { useSync } from '@/context/SyncContext';
 import { 
   Search, 
   ShoppingCart, 
@@ -160,48 +161,53 @@ export default function BillingPage() {
     }
   };
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const [prodList, offerList] = await Promise.all([
-          api.getProducts(),
-          api.getOffers()
-        ]);
-        setProducts(prodList);
-        setOffers(offerList);
+  async function loadData() {
+    try {
+      const [prodList, offerList] = await Promise.all([
+        api.getProducts(),
+        api.getOffers()
+      ]);
+      setProducts(prodList);
+      setOffers(offerList);
 
-        // Keep cart products, prices, and offer status in sync with latest db state
-        setCart(prevCart => {
-          return prevCart.map(item => {
-            const latestProd = prodList.find(p => p.id === item.product.id);
-            if (!latestProd) return item;
-            
-            let latestOffer = item.selectedOffer;
-            if (item.selectedOffer) {
-              const matchedOffer = offerList.find(o => o.offerId === item.selectedOffer?.offerId);
-              latestOffer = matchedOffer && matchedOffer.active ? matchedOffer : undefined;
-            } else {
-              // Auto-apply if a new active offer has been created for this product
-              const matchedOffer = offerList.find(o => o.productId === latestProd.id && o.active);
-              if (matchedOffer) {
-                latestOffer = matchedOffer;
-              }
+      // Keep cart products, prices, and offer status in sync with latest db state
+      setCart(prevCart => {
+        return prevCart.map(item => {
+          const latestProd = prodList.find(p => p.id === item.product.id);
+          if (!latestProd) return item;
+          
+          let latestOffer = item.selectedOffer;
+          if (item.selectedOffer) {
+            const matchedOffer = offerList.find(o => o.offerId === item.selectedOffer?.offerId);
+            latestOffer = matchedOffer && matchedOffer.active ? matchedOffer : undefined;
+          } else {
+            // Auto-apply if a new active offer has been created for this product
+            const matchedOffer = offerList.find(o => o.productId === latestProd.id && o.active);
+            if (matchedOffer) {
+              latestOffer = matchedOffer;
             }
-            return {
-              ...item,
-              product: latestProd,
-              selectedOffer: latestOffer
-            };
-          });
+          }
+          return {
+            ...item,
+            product: latestProd,
+            selectedOffer: latestOffer
+          };
         });
-      } catch (err) {
-        console.error('Failed to load POS catalog', err);
-      } finally {
-        setLoading(false);
-      }
+      });
+    } catch (err) {
+      console.error('Failed to load POS catalog', err);
+    } finally {
+      setLoading(false);
     }
+  }
+
+  const triggerSync = useSync('billing', loadData);
+  useSync('products', loadData);
+  useSync('offers', loadData);
+
+  useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 3000); // Poll every 3 seconds for real-time synchronization
+    const interval = setInterval(loadData, 15000); // 15 seconds polling fallback since channel is instant
     return () => clearInterval(interval);
   }, []);
 
@@ -451,6 +457,9 @@ export default function BillingPage() {
       setPointsBalance(0);
       setCustomerExists(false);
       setRedeemPoints(false);
+
+      triggerSync('billing');
+      triggerSync('products');
     } catch (err: any) {
       setErrorMsg(err.message || 'Checkout transaction failed.');
     } finally {

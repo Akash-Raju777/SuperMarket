@@ -1,5 +1,6 @@
 package com.supermarket.management.service;
 
+import com.supermarket.management.config.TenantContext;
 import com.supermarket.management.dto.CheckoutRequest;
 import com.supermarket.management.dto.CheckoutResponse;
 import com.supermarket.management.dto.CustomerResponse;
@@ -246,7 +247,15 @@ public class POSService {
         }
 
         // Run expiry checks to make sure slow sales velocity alters state
-        notificationService.runExpiryAndSalesChecks();
+        final String tenant = TenantContext.getCurrentTenant();
+        java.util.concurrent.CompletableFuture.runAsync(() -> {
+            try {
+                TenantContext.setCurrentTenant(tenant);
+                notificationService.runExpiryAndSalesChecks();
+            } finally {
+                TenantContext.clear();
+            }
+        });
 
         return CheckoutResponse.builder()
                 .billId(billId)

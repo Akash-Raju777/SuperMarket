@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { api, AnalyticsData } from '@/lib/api';
+import { useSync } from '@/context/SyncContext';
 import { 
   BarChart, 
   Bar, 
@@ -31,17 +32,21 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [trendType, setTrendType] = useState<'daily' | 'weekly' | 'monthly'>('daily');
 
-  useEffect(() => {
-    async function loadAnalytics() {
-      try {
-        const res = await api.getAnalytics();
-        setData(res);
-      } catch (err) {
-        console.error('Failed to load analytics metrics', err);
-      } finally {
-        setLoading(false);
-      }
+  async function loadAnalytics() {
+    try {
+      const res = await api.getAnalytics();
+      setData(res);
+    } catch (err) {
+      console.error('Failed to load analytics metrics', err);
+    } finally {
+      setLoading(false);
     }
+  }
+
+  useSync('products', loadAnalytics);
+  useSync('billing', loadAnalytics);
+
+  useEffect(() => {
     loadAnalytics();
   }, []);
 

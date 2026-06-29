@@ -129,14 +129,39 @@ export interface AnalyticsData {
   };
 }
 
+let activeBaseUrl = BASE_URL;
+
 async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  const url = `${BASE_URL}${endpoint}`;
+  const url = `${activeBaseUrl}${endpoint}`;
+  
+  let businessOwner = '';
+  try {
+    if (typeof window !== 'undefined') {
+      const savedUser = localStorage.getItem('auth_user');
+      if (savedUser) {
+        const user = JSON.parse(savedUser);
+        if (user && user.businessName) {
+          businessOwner = user.businessName;
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('Could not read auth_user from localStorage', e);
+  }
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...((options?.headers as Record<string, string>) || {}),
+  };
+
+  if (businessOwner) {
+    headers['X-Business-Owner'] = businessOwner;
+  }
+
   const response = await fetch(url, {
     cache: 'no-store',
-    headers: {
-      'Content-Type': 'application/json',
-    },
     ...options,
+    headers,
   });
 
   if (!response.ok) {
@@ -153,6 +178,27 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  // Config & Health
+  setBaseUrl: (url: string) => {
+    activeBaseUrl = url;
+  },
+  getBaseUrl: () => activeBaseUrl,
+  checkHealth: () => request<{ status: string }>('/health'),
+  getImageUrl: (photoUrl: string) => {
+    if (!photoUrl) return '';
+    return photoUrl.startsWith('/') ? `${activeBaseUrl}${photoUrl}` : photoUrl;
+  },
+
+  // Auth
+  login: (username: string, password: string) => request<any>('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ username, password }),
+  }),
+  register: (businessName: string, username: string, password: string) => request<any>('/api/auth/register', {
+    method: 'POST',
+    body: JSON.stringify({ businessName, username, password }),
+  }),
+
   // Products
   getProducts: () => request<Product[]>('/api/products'),
   getProductById: (id: string) => request<Product>(`/api/products/${id}`),
@@ -171,15 +217,35 @@ export const api = {
   uploadImage: async (file: File): Promise<string> => {
     const formData = new FormData();
     formData.append('file', file);
-    const response = await fetch(`${BASE_URL}/api/products/upload-image`, {
+    
+    let businessOwner = '';
+    try {
+      if (typeof window !== 'undefined') {
+        const savedUser = localStorage.getItem('auth_user');
+        if (savedUser) {
+          const user = JSON.parse(savedUser);
+          if (user && user.businessName) {
+            businessOwner = user.businessName;
+          }
+        }
+      }
+    } catch (e) {}
+
+    const headers: Record<string, string> = {};
+    if (businessOwner) {
+      headers['X-Business-Owner'] = businessOwner;
+    }
+
+    const response = await fetch(`${activeBaseUrl}/api/products/upload-image`, {
       method: 'POST',
       body: formData,
+      headers,
     });
     if (!response.ok) {
       throw new Error('Image upload failed');
     }
     const data = await response.json();
-    return data.url; // Returns the uploaded image static path (e.g. /uploads/uuid.png)
+    return data.url;
   },
 
   // POS Billing

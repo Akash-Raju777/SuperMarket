@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { api, Notification } from '@/lib/api';
 import Link from 'next/link';
+import { useSync } from '@/context/SyncContext';
 import { 
   Bell, 
   Check, 
@@ -36,6 +37,10 @@ export default function NotificationsCenter() {
     }
   }
 
+  const triggerSync = useSync('notifications', loadNotifications);
+  useSync('products', loadNotifications);
+  useSync('billing', loadNotifications);
+
   useEffect(() => {
     loadNotifications();
   }, []);
@@ -47,6 +52,7 @@ export default function NotificationsCenter() {
       setNotifications(notifications.map(n => 
         n.notificationId === id ? { ...n, readStatus: true } : n
       ));
+      triggerSync('notifications');
     } catch (err) {
       console.error('Failed to mark notification as read', err);
     }
