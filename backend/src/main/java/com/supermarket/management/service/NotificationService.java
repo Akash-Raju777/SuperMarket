@@ -13,7 +13,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class NotificationService {
@@ -139,7 +138,7 @@ public class NotificationService {
                                         return false;
                                     }
                                 })
-                                .mapToLong(Sale::getQuantitySold)
+                                .mapToInt(Sale::getQuantitySold)
                                 .sum();
 
                         if (recentSalesCount < 5 && product.getQuantity() > 0) {
