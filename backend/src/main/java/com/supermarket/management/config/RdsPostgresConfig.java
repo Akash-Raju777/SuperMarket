@@ -228,15 +228,16 @@ public class RdsPostgresConfig {
                     stmt.execute("ALTER TABLE user_accounts ADD COLUMN IF NOT EXISTS business_name VARCHAR(255)");
                     System.out.println("-> Table 'user_accounts' verified/migrated.");
 
-                    // Seeding default users (admin, cashier, demo@freshmart.com) with BCrypt passwords
                     BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
                     String pass123 = encoder.encode("password123");
                     String demoPass = encoder.encode("Demo@123");
+                    String superPass = encoder.encode("demo123");
 
                     Object[][] users = new Object[][] {
                             {"admin", pass123, "Demo Business", "admin"},
                             {"cashier", pass123, "Demo Business", "cashier"},
-                            {"demo@freshmart.com", demoPass, "Demo Business", "admin"}
+                            {"demo@freshmart.com", demoPass, "Demo Business", "admin"},
+                            {"demo@supermarket.com", superPass, "Demo Business", "admin"}
                     };
 
                     for (Object[] u : users) {

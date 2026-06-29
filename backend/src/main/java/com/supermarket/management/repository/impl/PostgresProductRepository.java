@@ -104,7 +104,7 @@ public class PostgresProductRepository implements ProductRepository {
             );
         } else {
             jdbcTemplate.update(
-                    "INSERT INTO products (id, name, brand, photoUrl, mfgDate, expDate, arrivingDate, quantity, price, business_id, sku, barcode, category, cost_price, gst, supplier, batch_number, product_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO products (id, name, brand, photoUrl, mfgDate, expDate, arrivingDate, quantity, price, business_id, sku, barcode, category, cost_price, gst, supplier, batch_number, product_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     product.getId(),
                     product.getName(),
                     product.getBrand(),
