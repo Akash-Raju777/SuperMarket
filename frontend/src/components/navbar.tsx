@@ -36,21 +36,30 @@ export default function Navbar() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const fetchUnreadCount = async () => {
+    if (!user) return;
     try {
       const data = await api.getUnreadNotificationsCount();
-      setUnreadCount(data.count);
+      if (data && typeof data.count === 'number') {
+        setUnreadCount(data.count);
+      }
     } catch (error) {
-      console.error('Failed to fetch unread notification count', error);
+      console.warn('Unable to query notifications count:', error);
     }
   };
 
   useSync('notifications', fetchUnreadCount);
 
   useEffect(() => {
-    fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 10000);
+    if (user) {
+      fetchUnreadCount();
+    }
+    const interval = setInterval(() => {
+      if (user) {
+        fetchUnreadCount();
+      }
+    }, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [user]);
 
   if (pathname === '/login') {
     return null;
