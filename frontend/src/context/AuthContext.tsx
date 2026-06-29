@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // 2. Fetch latest active tunnel URL from public ntfy cache
       try {
-        const ntfyRes = await fetch('https://ntfy.sh/supermarket_akash_tunnel_topic/raw?poll=1');
+        const ntfyRes = await fetch('https://ntfy.sh/supermarket_akash_tunnel_topic/raw');
         if (ntfyRes.ok) {
           const text = await ntfyRes.text();
           const lines = text.trim().split('\n');

@@ -13,7 +13,7 @@ $reader = $process.StandardOutput
 while (-not $reader.EndOfStream) {
     $line = $reader.ReadLine()
     Write-Host $line
-    if ($line -match "https://([a-zA-Z0-9]+)\.lhr\.life") {
+    if ($line -match "https://[a-zA-Z0-9\-\.]+") {
         $url = $Matches[0]
         Write-Host "Detected Tunnel URL: $url"
         try {

@@ -52,6 +52,14 @@ public class ProductController {
                     existingProduct.setArrivingDate(productDetails.getArrivingDate());
                     existingProduct.setQuantity(productDetails.getQuantity());
                     existingProduct.setPrice(productDetails.getPrice());
+                    existingProduct.setSku(productDetails.getSku());
+                    existingProduct.setBarcode(productDetails.getBarcode());
+                    existingProduct.setCategory(productDetails.getCategory());
+                    existingProduct.setCostPrice(productDetails.getCostPrice());
+                    existingProduct.setGst(productDetails.getGst());
+                    existingProduct.setSupplier(productDetails.getSupplier());
+                    existingProduct.setBatchNumber(productDetails.getBatchNumber());
+                    existingProduct.setProductStatus(productDetails.getProductStatus());
                     Product updated = productService.saveProduct(existingProduct);
                     return ResponseEntity.ok(updated);
                 })

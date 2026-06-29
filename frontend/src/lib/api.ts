@@ -252,6 +252,16 @@ export const api = {
     } catch (e) {}
 
     const headers: Record<string, string> = {};
+    let token = '';
+    try {
+      if (typeof window !== 'undefined') {
+        token = localStorage.getItem('auth_token') || '';
+      }
+    } catch (e) {}
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
     if (businessOwner) {
       headers['X-Business-Owner'] = businessOwner;
     }
